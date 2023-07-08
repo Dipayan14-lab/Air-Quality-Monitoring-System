@@ -1,0 +1,152 @@
+// Include library for LCD and define pins
+#include <LiquidCrystal.h>
+#include <SFE_BMP180.h>
+#include <Wire.h>
+#define ALTITUDE  590.0 //Enter your country evalution
+
+const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+SFE_BMP180 bmp;
+// Define pins and variable for input sensor and output led and buzzer
+const int mq135_aqi_sensor = A0;
+
+//bmp 180
+double T, P, S, A;
+char status;
+
+// Set threshold for AQI
+int aqi_ppm = 0;
+
+void setup() 
+{
+  pinMode (mq135_aqi_sensor, INPUT);
+
+  bmp.begin();
+  
+  Serial.begin (9600);
+  lcd.clear();
+  lcd.begin (16, 2);
+
+   lcd.setCursor(0, 0);
+  lcd.print("System Booting");//LCD
+  Serial.println("System Booting\n");
+  delay(5000);
+  
+  lcd.clear();
+  delay(2000);
+  
+  lcd.setCursor(0, 0);
+  lcd.print("AQI Alert System");//LCD
+  Serial.println("AQI Alert System");
+  delay(2000);
+  
+  lcd.setCursor(0, 1);
+  lcd.print("Plese wait 10sec");//LCD
+  Serial.println("Plese wait 10sec");
+  Serial.println("--------------------\n");
+  delay(10000);
+  lcd.clear();
+}
+
+
+void loop() 
+{
+  aqi_ppm = analogRead(mq135_aqi_sensor);
+  
+  //pressure 
+  status =  bmp.startTemperature();
+  if (status != 0)
+  {
+    delay(status);
+    status = bmp.getTemperature(T);
+    if (status != 0)
+    {
+      //LCD
+      lcd.setCursor(1, 0);
+      lcd.print("Temp. :");
+      lcd.print(T);
+      lcd.print("C");
+ 
+      //Serial Monitor
+      Serial.print("Temperature :");
+      Serial.print(T, 2);
+      Serial.println("ºc");
+    }
+  }
+
+   //pressure 
+    status = bmp.startPressure(3);// 0 to 3
+    if (status != 0) 
+    {
+      delay(status);
+      status = bmp.getPressure(P, T);
+      if (status != 0)
+      {
+        
+        lcd.setCursor(1,1);
+        lcd.print("Pres. :");
+        lcd.print(P);
+        lcd.print("mb");
+        
+        
+        Serial.print("Pres.: ");
+        Serial.print(P);
+        Serial.println("mb");
+      }
+ 
+    }
+
+      //Display Reset
+          delay(3000);
+          lcd.clear();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Air Quality: ");
+  lcd.print(aqi_ppm);
+  lcd.print("m");
+  Serial.print("Air Quality: ");
+  Serial.print(aqi_ppm);
+  Serial.print("m");
+  Serial.print("\n");
+
+
+  // logic
+  if ((aqi_ppm >= 0) && (aqi_ppm <= 50))
+  {
+    lcd.setCursor(1, 1);
+    lcd.print("AQI Good");
+    Serial.println("AQI Good");  
+  }
+  
+  else if ((aqi_ppm >= 51) && (aqi_ppm <= 100))
+  {
+    lcd.setCursor(2, 1);
+    lcd.print("AQI Moderate");
+    Serial.println("AQI Moderate");
+  }
+
+  else if ((aqi_ppm >= 101) && (aqi_ppm <= 200))
+  {
+    lcd.setCursor(1, 1);
+    lcd.print("AQI Unhealthy");
+    Serial.println("AQI Unhealthy");
+  }
+  
+  else if ((aqi_ppm >= 201) && (aqi_ppm <= 300))
+  {
+    lcd.setCursor(1, 1);
+    lcd.print("AQI V. Unhealthy");
+    Serial.println("AQI V. Unhealthy");
+  }
+  
+  else if (aqi_ppm >= 301)
+  {
+    lcd.setCursor(1, 1);
+    lcd.print("AQI Hazardous");
+    Serial.println("AQI Hazardous");
+  }
+
+  Serial.print("\n\n\n");
+  delay (2000);
+  lcd.clear();
+}
